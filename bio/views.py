@@ -6,9 +6,9 @@ from django.core.urlresolvers import reverse
 from django.views.decorators.http import require_http_methods
 from django.contrib import messages
 
-from classphoto import models as classphoto_api
-from classphoto.utils import create_s3_policy_doc
-from classphoto.emails import send_user_link
+from bio import models as bio_api
+from bio.utils import create_s3_policy_doc
+from bio.emails import send_user_link
 
 from signup import models as signup_api
 from sequence import models as sequence_api
@@ -32,7 +32,7 @@ def check_user(method):
             del request.session['user_bio']
         # get the user bio if possible
         try:
-            request.session['user_bio'] = classphoto_api.get_bio(su['email'])
+            request.session['user_bio'] = bio_api.get_bio(su['email'])
         except:
             pass
         return http.HttpResponseRedirect(request.path)
@@ -45,20 +45,20 @@ def sequence_redirect(request):
     current_sequence = sequence_api.get_current_sequence_number()
     if not current_sequence:
         return http.HttpResponseNotFound()
-    url = reverse('classphoto_classphoto', kwargs={'sequence':current_sequence})
+    url = reverse('bio_bio', kwargs={'sequence':current_sequence})
     return http.HttpResponseRedirect(url)
 
 
 @check_user
-def classphoto(request, sequence):
-    """ show classphoto for all signups for this sequence with profiles """
-    s3_policy, signature = create_s3_policy_doc(settings.AWS_S3_BUCKET, 'classphoto')
+def bio(request, sequence):
+    """ show bio for all signups for this sequence with profiles """
+    s3_policy, signature = create_s3_policy_doc(settings.AWS_S3_BUCKET, 'bio')
 
     prefix = hmac.new(
         'THEANSWERIS42', request.session.session_key, hashlib.sha1
     ).hexdigest()
 
-    bios = classphoto_api.get_bios(sequence, limit=0)
+    bios = bio_api.get_bios(sequence, limit=0)
     bios += [{'email': ''} for i in range(len(bios), 36)]
     bios = random.sample(bios, 36)
 
@@ -84,17 +84,17 @@ def classphoto(request, sequence):
         's3_signature': signature,
         'AWS_ACCESS_KEY_ID': settings.AWS_ACCESS_KEY_ID,
         'AWS_S3_BUCKET': settings.AWS_S3_BUCKET,
-        'key_prefix': 'classphoto/{0}'.format(prefix)
+        'key_prefix': 'bio/{0}'.format(prefix)
     }
     
-    return render_to_response('classphoto/index.html', context, context_instance=RequestContext(request))
+    return render_to_response('bio/index.html', context, context_instance=RequestContext(request))
 
 
 @require_http_methods(['POST'])
 def save_bio(request, sequence):
-    """ receive AJAX post from class classphoto page """
+    """ receive AJAX post from class bio page """
 
-    url = reverse('classphoto_classphoto', kwargs={'sequence': sequence})
+    url = reverse('bio_bio', kwargs={'sequence': sequence})
 
     # TODO validate data on the server side also!
 
@@ -115,7 +115,7 @@ def save_bio(request, sequence):
         messages.error(request, 'Oops! We don\'t recognize that email. Maybe you signed up with a different one?')
         return http.HttpResponseRedirect(url)
 
-    user_bio = classphoto_api.save_bio(
+    user_bio = bio_api.save_bio(
         request.POST['email'],
         sequence,
         request.POST['name'],
@@ -144,7 +144,7 @@ def request_link(request):
         # TODO user will receive an error if they request a link and they only signed up for a previous sequence :(
     except:
         messages.error(request, 'Not so fast, partner -- you need to sign up for the Mechanical MOOC first!')
-    url = reverse('classphoto_sequence_redirect')
+    url = reverse('bio_sequence_redirect')
     if settings.DEBUG and signup:
         url += '?key={0}'.format(signup['key'])
     return http.HttpResponseRedirect(url)
@@ -155,4 +155,4 @@ def clear_session(request):
         del request.session['user_bio']
     if request.session.get('user_email'):
         del request.session['user_email']
-    return http.HttpResponseRedirect(reverse('classphoto_sequence_redirect'))
+    return http.HttpResponseRedirect(reverse('bio_sequence_redirect'))
