@@ -1,3 +1,3 @@
 # Classphoto
 
-Online courses should have class photo's too.
+Online courses should have class photos too.
