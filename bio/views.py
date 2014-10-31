@@ -10,9 +10,6 @@ from bio import models as bio_api
 from bio.utils import create_s3_policy_doc
 from bio.emails import send_user_link
 
-from signup import models as signup_api
-from sequence import models as sequence_api
-
 import hmac, hashlib
 import random
 
@@ -24,15 +21,15 @@ def check_user(method):
         if not key:
             return method(*args, **kwargs)
         try:
-            su = signup_api.get_signup_by_invite_code(key)
+            bio = bio_api.get_bio_by_secret(key)
         except:
             return method(*args, **kwargs)
-        request.session['user_email'] = su['email']
+        request.session['user_email'] = bio['email']
         if request.session.get('user_bio'):
             del request.session['user_bio']
-        # get the user bio if possible
+        # TODO - do we still need to do this?
         try:
-            request.session['user_bio'] = bio_api.get_bio(su['email'])
+            request.session['user_bio'] = bio
         except:
             pass
         return http.HttpResponseRedirect(request.path)
@@ -42,7 +39,7 @@ def check_user(method):
 @check_user
 def sequence_redirect(request):
     # TODO if we have a signed in user, we should redirect to the right sequence
-    current_sequence = sequence_api.get_current_sequence_number()
+    current_sequence = None #sequence_api.get_current_sequence_number()
     if not current_sequence:
         return http.HttpResponseNotFound()
     url = reverse('bio_bio', kwargs={'sequence':current_sequence})
@@ -98,19 +95,6 @@ def save_bio(request, sequence):
 
     # TODO validate data on the server side also!
 
-    # check if user signed up for the mooc
-    signed_up = False
-    try:
-        signup = signup_api.get_signup(request.POST['email'], sequence)
-        signed_up = True
-    except:
-        pass
-
-    if not signed_up or signup['sequence'] != int(sequence):
-        messages.error(request, 'We couln\'t find your signup. Please check if you just gave us the email you signed up with?')
-        #TODO: this error should not be possible
-        return http.HttpResponseRedirect(url)
-
     if request.POST['email'] != request.session.get('user_email'):
         messages.error(request, 'Oops! We don\'t recognize that email. Maybe you signed up with a different one?')
         return http.HttpResponseRedirect(url)
@@ -132,21 +116,17 @@ def save_bio(request, sequence):
 
 
 @require_http_methods(['POST'])
-def request_link(request):
-    signup = None
-    try:
-        signups = signup_api.get_all_user_signups(request.POST.get('email'))
-        if len(signups) == 0:
-            raise Exception()
-        signup = signups[0]
-        messages.success(request, 'Check your inbox -- a tasty new link will be there shortly.')
-        send_user_link(signup['email'], signup['key'])
-        # TODO user will receive an error if they request a link and they only signed up for a previous sequence :(
-    except:
-        messages.error(request, 'Not so fast, partner -- you need to sign up for the Mechanical MOOC first!')
-    url = reverse('bio_sequence_redirect')
-    if settings.DEBUG and signup:
-        url += '?key={0}'.format(signup['key'])
+def request_link(request, sequence):
+    bio = None
+    if bio_api.has_bio( request.POST.get('email'), sequence):
+        bio = bio_api.get_bio( request.POST.get('email'), sequence)
+    else:
+        bio = bio_api.save_bio( request.POST.get('email'), sequence, '', '', '')
+    messages.success(request, 'Check your inbox -- a tasty new link will be there shortly.')
+    #TODO send_user_link(bio['email'], sequence, bio['secret'])
+    url = reverse('bio_bio', kwargs={'sequence': sequence})
+    if settings.DEBUG:
+        url += '?key={0}'.format(bio['secret'])
     return http.HttpResponseRedirect(url)
 
 

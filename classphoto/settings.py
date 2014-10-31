@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/1.7/ref/settings/
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-
+path = lambda *a: os.path.join(BASE_DIR, *a)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.7/howto/deployment/checklist/
@@ -36,6 +36,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'bio',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -63,6 +64,10 @@ DATABASES = {
     }
 }
 
+TEMPLATE_DIRS = (
+    os.path.join(BASE_DIR, 'templates'),
+)
+
 # Internationalization
 # https://docs.djangoproject.com/en/1.7/topics/i18n/
 
@@ -81,3 +86,18 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.7/howto/static-files/
 
 STATIC_URL = '/static/'
+
+STATIC_ROOT = path('staticfiles')
+
+STATICFILES_DIRS = (
+    path('static'),
+)
+
+AWS_S3_BUCKET = ''
+AWS_ACCESS_KEY_ID = ''
+AWS_SECRET_ACCESS_KEY = ''
+MOOC_TITLE = ''
+MOOC_DOMAIN = ''
+MAILGUN_API_URL = 'http://test.net'
+MAILGUN_API_KEY = ''
+MAILGUN_API_DOMAIN = ''

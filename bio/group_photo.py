@@ -49,6 +49,7 @@ def make_group_photo(group_uri):
 
 
 def upload_to_s3(filename, bucket):
+    # Assumes that AWS credentials are specified in some way recognized by boto
     c = boto.connect_s3()
     b = c.get_bucket(bucket)
     k = Key(b)

@@ -6,9 +6,6 @@ from classphoto import models as classphoto_api
 from classphoto import db
 from classphoto import emails
 
-from signup import models as signup_api
-
-@patch('signup.models.sequence_model.get_current_sequence_number', lambda: 1)
 class SimpleTest(TestCase):
 
     def setUp(self):

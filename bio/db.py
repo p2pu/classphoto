@@ -2,7 +2,8 @@ from django.db import models
 
 class UserBio(models.Model):
     email = models.EmailField()
-    sequence = models.IntegerField()
+    secret = models.CharField(max_length=32)
+    sequence = models.CharField(max_length=256)
     bio = models.TextField()
     name = models.TextField()
     avatar = models.TextField()

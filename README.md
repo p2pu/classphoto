@@ -1,4 +1,3 @@
 # Classphoto
 
-Create a class photo for your online course
-
+Online courses should have class photo's too.
